@@ -1,22 +1,40 @@
-import streamlit as st
-from transformers import pipeline
+import gradio as gr
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-# Load a zero-shot classification pipeline (this is the AI brain)
-classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+job_description = """We are looking for a software engineer with experience in Python, machine learning, and automation. Strong understanding of AI workflows and data processing preferred."""
 
-# Title for your app
-st.title("💼 MatchMaker.AI — Resume vs Job Match Tool")
+resumes = {
+    "Drea Resume 1": "Experienced in recruiting, data analytics, and process automation using Python and SQL. Currently studying Computer Science with a focus on AI.",
+    "Resume 2": "Software engineer with 5 years of experience in React and JavaScript development. Interested in front-end frameworks and UX design.",
+    "Resume 3": "Python developer with a passion for automation, APIs, and machine learning. Built multiple automation tools and AI-powered dashboards.",
+}
 
-# Get user input
-resume = st.text_area("📝 Paste your resume here:")
-job_desc = st.text_area("💼 Paste the job description here:")
+def match_resume(job_text, resume_dict):
+    texts = [job_text] + list(resume_dict.values())
+    vectorizer = TfidfVectorizer()
+    tfidf_matrix = vectorizer.fit_transform(texts)
+    similarities = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:]).flatten()
+    results = sorted(zip(resume_dict.keys(), similarities), key=lambda x: x[1], reverse=True)
+    return "\n".join([f"{name}: {round(score*100, 2)}% match" for name, score in results])
 
-# When user clicks the button
-if st.button("🔍 Match Me"):
-    if resume and job_desc:
-        with st.spinner("🤖 Analyzing with AI..."):
-            result = classifier(resume, candidate_labels=[job_desc])
-            score = result["scores"][0] * 100
-            st.success(f"🎯 Match Score: {round(score, 2)}%")
-    else:
-        st.warning("Please paste both your resume and the job description.")
+def run_matcher(job_desc, res1, res2, res3):
+    resumes_input = {
+        "Custom Resume 1": res1,
+        "Custom Resume 2": res2,
+        "Custom Resume 3": res3,
+    }
+    return match_resume(job_desc, resumes_input)
+
+with gr.Blocks() as demo:
+    gr.Markdown("## 💼 MatchMaker.AI — Resume Match Engine\nMatch your job descriptions with resumes using smart AI scoring.")
+    with gr.Row():
+        job_input = gr.Textbox(label="📝 Job Description", lines=6, value=job_description)
+    with gr.Row():
+        resume1 = gr.Textbox(label="📄 Resume 1", lines=4, value=list(resumes.values())[0])
+        resume2 = gr.Textbox(label="📄 Resume 2", lines=4, value=list(resumes.values())[1])
+        resume3 = gr.Textbox(label="📄 Resume 3", lines=4, value=list(resumes.values())[2])
+    match_btn = gr.Button("🔍 Match Resumes")
+    output = gr.Textbox(label="📊 Match Results", lines=6)
+    match_btn.click(fn=run_matcher, inputs=[job_input, resume1, resume2, resume3], outputs=output)
+demo.launch()
