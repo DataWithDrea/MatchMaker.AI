@@ -19,6 +19,13 @@ This beginner-friendly AI app helps recruiters and job seekers visualize how a c
 
 ---
 
+### 📸 App Preview
+
+![MatchMaker.AI Screenshot](img/matchmaker-ui.png)
+
+MatchMaker.AI helps you see how well resumes align with a job — scored by semantic similarity, powered by Python + NLP.
+
+---
 ## 🚀 Features
 - Upload or paste a job description
 - Add 3 sample or real resumes
